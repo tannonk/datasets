@@ -14,6 +14,12 @@
 # limitations under the License.
 """ SARI metric."""
 
+""" UPDATE:             
+    div_zero arg for testing discrepency between
+    original implementation and HuggingFace's
+    in original, div_zero=0, in HF div_zero=1
+"""
+
 from collections import Counter
 import math
 from typing import List
@@ -342,6 +348,5 @@ class SariBP(datasets.Metric):
         sari_score = 0
         for src, pred, refs in zip(sources, predictions, references):
             sari_score += SARIsent(normalize(src), normalize(pred), [normalize(sent) for sent in refs], use_brevity_penalty=use_brevity_penalty, div_zero=0)
-            # div_zero arg for testing discrepency
         sari_score = sari_score / len(predictions)
         return {"sari": 100 * sari_score}

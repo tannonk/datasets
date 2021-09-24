@@ -14,6 +14,13 @@
 # limitations under the License.
 """ SARI metric."""
 
+""" UPDATE:             
+    div_zero arg for testing discrepency between
+    original implementation and HuggingFace's
+    in original, div_zero=0, in HF div_zero=1
+"""
+
+
 from collections import Counter
 
 import sacrebleu
@@ -79,7 +86,7 @@ Examples:
 """
 
 
-def SARIngram(sgrams, cgrams, rgramslist, numref):
+def SARIngram(sgrams, cgrams, rgramslist, numref, div_zero):
     rgramsall = [rgram for rgrams in rgramslist for rgram in rgrams]
     rgramcounter = Counter(rgramsall)
 
@@ -107,8 +114,8 @@ def SARIngram(sgrams, cgrams, rgramslist, numref):
         keeptmpscore2 += keepgramcountergood_rep[keepgram]
     # Define 0/0=1 instead of 0 to give higher scores for predictions that match
     #      a target exactly.
-    keepscore_precision = 1
-    keepscore_recall = 1
+    keepscore_precision = div_zero
+    keepscore_recall = div_zero
     if len(keepgramcounter_rep) > 0:
         keepscore_precision = keeptmpscore1 / len(keepgramcounter_rep)
     if len(keepgramcounterall_rep) > 0:
@@ -130,7 +137,7 @@ def SARIngram(sgrams, cgrams, rgramslist, numref):
         deltmpscore2 += delgramcountergood_rep[delgram] / delgramcounterall_rep[delgram]
     # Define 0/0=1 instead of 0 to give higher scores for predictions that match
     # a target exactly.
-    delscore_precision = 1
+    delscore_precision = div_zero
     if len(delgramcounter_rep) > 0:
         delscore_precision = deltmpscore1 / len(delgramcounter_rep)
 
@@ -145,8 +152,8 @@ def SARIngram(sgrams, cgrams, rgramslist, numref):
 
     # Define 0/0=1 instead of 0 to give higher scores for predictions that match
     # a target exactly.
-    addscore_precision = 1
-    addscore_recall = 1
+    addscore_precision = div_zero, div_zero
+    addscore_recall = div_zero, div_zero
     if len(addgramcounter) > 0:
         addscore_precision = addtmpscore / len(addgramcounter)
     if len(addgramcounterall) > 0:
@@ -158,7 +165,7 @@ def SARIngram(sgrams, cgrams, rgramslist, numref):
     return (keepscore, delscore_precision, addscore)
 
 
-def SARIsent(ssent, csent, rsents):
+def SARIsent(ssent, csent, rsents, div_zero):
     numref = len(rsents)
 
     s1grams = ssent.split(" ")
@@ -216,10 +223,10 @@ def SARIsent(ssent, csent, rsents):
             c4gram = c1grams[i] + " " + c1grams[i + 1] + " " + c1grams[i + 2] + " " + c1grams[i + 3]
             c4grams.append(c4gram)
 
-    (keep1score, del1score, add1score) = SARIngram(s1grams, c1grams, r1gramslist, numref)
-    (keep2score, del2score, add2score) = SARIngram(s2grams, c2grams, r2gramslist, numref)
-    (keep3score, del3score, add3score) = SARIngram(s3grams, c3grams, r3gramslist, numref)
-    (keep4score, del4score, add4score) = SARIngram(s4grams, c4grams, r4gramslist, numref)
+    (keep1score, del1score, add1score) = SARIngram(s1grams, c1grams, r1gramslist, numref, div_zero)
+    (keep2score, del2score, add2score) = SARIngram(s2grams, c2grams, r2gramslist, numref, div_zero)
+    (keep3score, del3score, add3score) = SARIngram(s3grams, c3grams, r3gramslist, numref, div_zero)
+    (keep4score, del4score, add4score) = SARIngram(s4grams, c4grams, r4gramslist, numref, div_zero)
     avgkeepscore = sum([keep1score, keep2score, keep3score, keep4score]) / 4
     avgdelscore = sum([del1score, del2score, del3score, del4score]) / 4
     avgaddscore = sum([add1score, add2score, add3score, add4score]) / 4
@@ -283,6 +290,6 @@ class Sari(datasets.Metric):
             raise ValueError("Sources length must match predictions and references lengths.")
         sari_score = 0
         for src, pred, refs in zip(sources, predictions, references):
-            sari_score += SARIsent(normalize(src), normalize(pred), [normalize(sent) for sent in refs])
+            sari_score += SARIsent(normalize(src), normalize(pred), [normalize(sent) for sent in refs], div_zero=0)
         sari_score = sari_score / len(predictions)
         return {"sari": 100 * sari_score}
